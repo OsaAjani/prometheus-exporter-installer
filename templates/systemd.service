@@ -1,11 +1,11 @@
 [Unit]
 Description=Prometheus exporter : {{EXPORTER_NAME}}
 After=network.target
-User={{EXPORTER_NAME}}
-Group={{EXPORTER_NAME}}
 
 [Service]
 Type=simple
+User={{EXPORTER_NAME}}
+Group={{EXPORTER_NAME}}
 Restart=always
 EnvironmentFile=/etc/default/{{EXPORTER_NAME}}
 ExecStart=/usr/bin/{{EXPORTER_NAME}} $ARGS

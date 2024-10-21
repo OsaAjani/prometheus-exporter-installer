@@ -96,7 +96,7 @@ echo -e "Done.\n\n"
 # If needed add a secure nginx reverse proxy conf with auth
 if [ "$nginx_reverse" == "true" ]; then
     echo -e "Add some Nginx secure reverse proxy for this exporter, with authentication process based on htaccess."
-    printf "$http_user:$(openssl passwd -5 $http_password)\n" >> "/etc/$exporter_name/.htpasswd"
+    printf "$http_user:$(openssl passwd -5 $http_password)\n" > "/etc/$exporter_name/.htpasswd"
 
     sudo cp "./templates/nginx-site.conf" "/etc/nginx/sites-available/$http_domain.conf"
     replace_flags "/etc/nginx/sites-available/$http_domain.conf"
