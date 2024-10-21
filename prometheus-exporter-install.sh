@@ -11,7 +11,7 @@ http_domain=""
 
 # Function to display usage information
 usage() {
-    echo "Usage: $0 --exporter_name <exporter_name> --dir_path <directory_path> --port <exporter_port> [--nginx-reverse --http-user <http_user> --http-password <http_password> --http-domain <http_domain>]"
+    echo -e "Usage: $0 --exporter_name <exporter_name> --dir_path <directory_path> --port <exporter_port> [--nginx-reverse --http-user <http_user> --http-password <http_password> --http-domain <http_domain>]"
     exit 1
 }
 
@@ -19,11 +19,11 @@ usage() {
 # Function to replace flags in conf files
 replace_flags() {
     local file=$1
-    sed -i "s/{{PORT}}/${$port}/g" "$file"
-    sed -i "s/{{EXPORTER_NAME}}/${$exporter_name}/g" "$file"
-    sed -i "s/{{HTTP_USER}}/${$http_user}/g" "$file"
-    sed -i "s/{{HTTP_PASSWORD}}/${$http_password}/g" "$file"
-    sed -i "s/{{HTTP_DOMAIN}}/${$http_domain}/g" "$file"
+    sed -i "s/{{PORT}}/${port}/g" "$file"
+    sed -i "s/{{EXPORTER_NAME}}/${exporter_name}/g" "$file"
+    sed -i "s/{{HTTP_USER}}/${http_user}/g" "$file"
+    sed -i "s/{{HTTP_PASSWORD}}/${http_password}/g" "$file"
+    sed -i "s/{{HTTP_DOMAIN}}/${http_domain}/g" "$file"
 }
 
 # Parse the named parameters
@@ -36,67 +36,66 @@ while [[ "$#" -gt 0 ]]; do
         --http-user) http_user="$2"; shift ;;
         --http-password) http_password="$2"; shift ;;
         --http-domain) http_domain="$2"; shift ;;
-        *) echo "Unknown parameter passed: $1"; usage ;;
+        *) echo -e "Unknown parameter passed: $1"; usage ;;
     esac
     shift
 done
 
 # Check if both parameters are provided
 if [ -z "$exporter_name" ] || [ -z "$dir_path" ] || [ -z "$port" ]; then
-    echo "Error: --exporter_name, --dir_path and --port are required."
+    echo -e "Error: --exporter_name, --dir_path and --port are required."
     usage
 fi
 
 # Check if the directory exists
 if [ ! -d "$dir_path" ]; then
-    echo "Directory '$dir_path' does not exist."
+    echo -e "Directory '$dir_path' does not exist."
     exit 1
 fi
 
 
 
 # Create dirs and users
-echo "Create a exporter users and directories"
+echo -e "Create a exporter users and directories"
 sudo groupadd -f "$exporter_name"
 sudo useradd -g "$exporter_name" --no-create-home --shell /bin/false "$exporter_name"
 sudo mkdir /etc/"$exporter_name"
 sudo chown "$exporter_name":"$exporter_name" /etc/"$exporter_name"
-echo "Done.\n\n"
+echo -e "Done.\n\n"
 
 # Copy binary
-echo "Copy binary of exporter"
+echo -e "Copy binary of exporter"
 sudo cp "$dir_path/$exporter_name" /usr/bin/
 sudo chown "$exporter_name:$exporter_name" "/usr/bin/$exporter_name"
-echo "Done.\n\n"
+echo -e "Done.\n\n"
 
 # Create empty conf file
-echo "Create empty exporter conf file, remember to fill it later !"
+echo -e "Create empty exporter conf file, remember to fill it later !"
 sudo touch "/etc/$exporter_name/$exporter_name.yml"
 sudo chown "$exporter_name:$exporter_name" "/etc/$exporter_name/$exporter_name.yml"
-echo "Done.\n\n"
+echo -e "Done.\n\n"
 
 # Create basic service file
-echo "Create an default empty service arguments, remember to fill it later !"
-sudo mkdir "/etc/default/$exporter_name"
+echo -e "Create an default empty service arguments, remember to fill it later !"
 sudo cp "./templates/systemd-args" "/etc/default/$exporter_name"
 replace_flags "/etc/default/$exporter_name"
-echo "Done.\n\n"
+echo -e "Done.\n\n"
 
 # Create the systemd service
-echo "Create systemd service for exporter"
-sudo cp "./templates/systemd.service" "/etc/default/$exporter_name.service"
-replace_flags "/etc/default/$exporter_name.service"
-echo "Done.\n\n"
+echo -e "Create systemd service for exporter"
+sudo cp "./templates/systemd.service" "/etc/systemd/system/$exporter_name.service"
+replace_flags "/etc/systemd/system/$exporter_name.service"
+echo -e "Done.\n\n"
 
 # Reload systemd services and enable
-echo "Reload systemd services and enable the exporter service"
+echo -e "Reload systemd services and enable the exporter service"
 sudo systemctl daemon-reload
 sudo systemctl enable "$exporter_name.service"
-echo "Done.\n\n"
+echo -e "Done.\n\n"
 
 # If needed add a secure nginx reverse proxy conf with auth
 if [ "$nginx_reverse" == "true" ]; then
-    echo "Add some Nginx secure reverse proxy for this exporter, with authentication process based on htaccess."
+    echo -e "Add some Nginx secure reverse proxy for this exporter, with authentication process based on htaccess."
     printf "$http_user:$(openssl passwd -5 $http_password)\n" >> "/etc/$exporter_name/.htpasswd"
 
     sudo cp "./templates/nginx-site.conf" "/etc/nginx/sites-available/$http_domain.conf"
@@ -104,5 +103,5 @@ if [ "$nginx_reverse" == "true" ]; then
     sudo ln -s "/etc/nginx/sites-available/$http_domain.conf" "/etc/nginx/sites-enabled"
 
     sudo systemctl reload nginx.service
-    echo "Done.\n\n"
+    echo -e "Done.\n\n"
 fi
